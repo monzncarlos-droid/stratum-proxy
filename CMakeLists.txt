@@ -181,6 +181,7 @@ find_library(LIB_CONSENSUS
 find_library(LIB_CRYPTO
     NAMES ${LIB_NAME_CRYPTO} ${COIN_CORE_LIB_PREFIX}_crypto_base
     HINTS ${COIN_CORE_LIB_DIR}
+          ${COIN_CORE_LIB_DIR}/crypto/.libs
     NO_DEFAULT_PATH
 )
 
@@ -188,16 +189,19 @@ find_library(LIB_CRYPTO
 find_library(LIB_CRYPTO_SSE41
     NAMES ${COIN_CORE_LIB_PREFIX}_crypto_sse41
     HINTS ${COIN_CORE_LIB_DIR}
+          ${COIN_CORE_LIB_DIR}/crypto/.libs
     NO_DEFAULT_PATH
 )
 find_library(LIB_CRYPTO_AVX2
     NAMES ${COIN_CORE_LIB_PREFIX}_crypto_avx2
     HINTS ${COIN_CORE_LIB_DIR}
+          ${COIN_CORE_LIB_DIR}/crypto/.libs
     NO_DEFAULT_PATH
 )
 find_library(LIB_CRYPTO_SHANI
     NAMES ${COIN_CORE_LIB_PREFIX}_crypto_x86_shani
     HINTS ${COIN_CORE_LIB_DIR}
+          ${COIN_CORE_LIB_DIR}/crypto/.libs
     NO_DEFAULT_PATH
 )
 

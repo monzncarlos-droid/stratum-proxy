@@ -2,13 +2,23 @@
 
 Universal Stratum Proxy for Bitcoin/Litecoin-forked Coins.
 
+`stratum-proxy`is a small **developer-focused** TCP Stratum proxy, a helper tool for developers of miners or pools. It was created as a successor of the [rinpool-proxy](https://github.com/takologi/rinpool-proxy) project from the Rincoin project.
+
+The proxy sits between a miner and a mining pool, forwards stratum traffic **byte-for-byte**, and writes a log that lets you see, replay, debug, and analyze what has been actually happening on the wire.
+
+***Warning: do not use in production! This tool is intended for testing and development. It is not hardened, it logs sensitive traffic to disk, and it does not attempt to be robust against malicious inputs.***
+
+
 ## Features
 
-- Works with **any** Bitcoin or Litecoin fork
+- It is designed to work with **any** Bitcoin or Litecoin fork
 - Uses the coin core's actual hash function (not a reimplementation)
 - Automatically detects `GetPoWHash()` (altcoins) vs `GetHash()` (Bitcoin) at compile time
 - TOML-based configuration with regex decorators for log coloring
 - Zero manual hash function porting required
+- TCP only (no TLS termination).
+- only one single miner is expected (no concurrency)
+
 
 ## Quick Start
 
@@ -65,3 +75,10 @@ available after rebuilding.
 
 See [LICENSE](LICENSE) for details.
 
+## Releases
+
+There are none and there will be none. The project is aimed at developers who should be able to create their own binaries.
+
+## Help with the development
+
+This project 

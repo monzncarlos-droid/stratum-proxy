@@ -253,8 +253,8 @@ add_executable(stratum-proxy
 
 # Set output name with optional suffix (e.g., stratum-proxy_rincoin)
 if(NOT COIN_CORE_BINARY_SUFFIX STREQUAL "")
-    set_target_properties(stratum-proxy PROPERTIES OUTPUT_NAME "stratum-proxy_${COIN_CORE_BINARY_SUFFIX}")
-    message(STATUS "Output binary: stratum-proxy_${COIN_CORE_BINARY_SUFFIX}")
+    set_target_properties(stratum-proxy PROPERTIES OUTPUT_NAME "stratum-proxy-${COIN_CORE_BINARY_SUFFIX}")
+    message(STATUS "Output binary: stratum-proxy-${COIN_CORE_BINARY_SUFFIX}")
 endif()
 
 target_include_directories(stratum-proxy PRIVATE

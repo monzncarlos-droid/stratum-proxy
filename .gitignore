@@ -1,0 +1,57 @@
+# Build and binary output
+/build/
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+*.dylib
+
+# CMake and Make
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# IDE and editor files
+*.swp
+*.swo
+*.swn
+*~
+*.bak
+*.tmp
+.DS_Store
+.vscode/
+.idea/
+
+# Logs and temp
+*.log
+*.pid
+*.seed
+.repo_url.tmp
+
+# Coin core (cloned from upstream)
+/coin_core/
+
+# Backup and generated files
+*.old
+*.orig
+*.rej
+
+# Exclude third-party licenses (if not modified)
+!/licenses/
+
+# Exclude external dependencies
+extern/
+
+# Exclude test output
+/test-output/
+
+# Exclude the stratum.toml configuration file
+/stratum.toml
+
+# Exclude binaries
+stratum-proxy

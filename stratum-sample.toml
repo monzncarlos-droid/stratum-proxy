@@ -1,0 +1,133 @@
+# Stratum Proxy Configuration File
+# =================================
+#
+# Copy this file to stratum.toml and customize as needed.
+# Run with: ./stratum-proxy stratum.toml
+
+# Upstream pool URL (required)
+# Supports: stratum+tcp://host:port, tcp://host:port, or host:port
+upstream_url = "stratum+tcp://eu.rplant.xyz:7148"
+
+# Local port to listen on (required)
+local_port = 12345
+
+# Log file path (optional)
+# If empty or omitted, logs only to console.
+# log_file = "stratum.log"
+
+# Enable colored console output (optional, default: true)
+# Colors are only applied when stdout is a TTY.
+color_console = true
+
+# =============================================================================
+# Decorators
+# =============================================================================
+#
+# Decorators apply regex search & replace to log lines for console output.
+# Each decorator has:
+#   - name:     Human-readable description (for documentation)
+#   - pattern:  ECMAScript regex pattern to match
+#   - modifier: Replacement string (supports $0, $1, $2, ... capture groups)
+#
+# Decorators are applied in order. Each decorator's output becomes
+# the input to the next decorator, allowing for chaining.
+#
+# ANSI color codes reference:
+#   Reset:         \u001b[0m
+#   Bold:          \u001b[1m
+#   
+#   Standard colors (30-37):
+#     Black:   \u001b[30m    Red:     \u001b[31m    Green:   \u001b[32m
+#     Yellow:  \u001b[33m    Blue:    \u001b[34m    Magenta: \u001b[35m
+#     Cyan:    \u001b[36m    White:   \u001b[37m
+#   
+#   Bright colors (90-97):
+#     Bright Black:   \u001b[90m    Bright Red:     \u001b[91m
+#     Bright Green:   \u001b[92m    Bright Yellow:  \u001b[93m
+#     Bright Blue:    \u001b[94m    Bright Magenta: \u001b[95m
+#     Bright Cyan:    \u001b[96m    Bright White:   \u001b[97m
+#
+# Pattern tips:
+#   - Log line format: "TIMESTAMP\tORIGIN\tPAYLOAD"
+#   - Origin is one of: pool, miner, proxy
+#   - Use ^ and $ for full line matches
+#   - Escape backslashes in TOML: use \u001b not \\u001b in basic strings
+#   - Use literal strings (single quotes) if escaping is confusing
+
+# -----------------------------------------------------------------------------
+# Example decorators matching the original rinpool-proxy colors:
+#   pool  -> bright green (ESC[92m)
+#   miner -> bright red   (ESC[91m)
+#   proxy -> white        (ESC[37m)
+#
+# Note: TOML uses \u001b for the ESC character (not \u001b)
+# -----------------------------------------------------------------------------
+
+[[decorators]]
+name = "pool lines - bright green"
+pattern = '^([^\t]+)\t(pool)\t(.*)$'
+modifier = "\u001b[92m$0\u001b[0m"
+
+[[decorators]]
+name = "miner lines - cyan"
+pattern = '^([^\t]+)\t(miner)\t(.*)$'
+modifier = "\u001b[36m$0\u001b[0m"
+
+[[decorators]]
+name = "proxy lines - white"
+pattern = '^([^\t]+)\t(proxy)\t(.*)$'
+modifier = "\u001b[37m$0\u001b[0m"
+
+# -----------------------------------------------------------------------------
+# Additional examples (commented out by default)
+# Note: Uncomment and change \u001b to actual escape sequence
+# -----------------------------------------------------------------------------
+
+# Highlight share submissions in bold yellow
+[[decorators]]
+name = "share submit highlight"
+pattern = '(mining\.submit)'
+modifier = "\u001b[1;93m$1\u001b[0m"
+
+# Highlight accepted shares (result:true) in bold bright green
+[[decorators]]
+name = "accepted share"
+pattern = '"result"\s*:\s*true'
+modifier = "\u001b[1;92m$0\u001b[0m"
+
+# Highlight rejected shares (result:false) in bold bright red
+[[decorators]]
+name = "rejected share"
+pattern = '"result"\s*:\s*false'
+modifier = "\u001b[1;91m$0\u001b[0m"
+
+# Highlight pool errors (non-null) with red background
+# Handles both array errors like [24,"msg",null] and simple values
+[[decorators]]
+name = "pool error highlight"
+pattern = '"error"\s*:\s*(\[[^\]]*\]|(?!null)[^,}\]]+)'
+modifier = "\u001b[41;97m$0\u001b[0m"
+
+# Highlight meets_pool_difficulty:true with green background, bright white text
+[[decorators]]
+name = "meets pool difficulty true"
+pattern = '"meets_pool_difficulty":true'
+modifier = "\u001b[42;97m$0\u001b[0m"
+
+# Highlight meets_pool_difficulty:false with red background, bright white text
+[[decorators]]
+name = "meets pool difficulty false"
+pattern = '"meets_pool_difficulty":false'
+modifier = "\u001b[41;97m$0\u001b[0m"
+
+# Highlight difficulty values in cyan
+[[decorators]]
+name = "difficulty highlight"
+pattern = '"difficulty"\s*:\s*([0-9|e.]+)'
+modifier = "\u001b[96m$0\u001b[0m"
+
+# Highlight job IDs in magenta
+[[decorators]]
+name = "job id highlight"
+pattern = '"job_id"\s*:\s*"([^"]+)"'
+modifier = "\u001b[35m$0\u001b[0m"

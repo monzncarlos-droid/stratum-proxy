@@ -103,7 +103,12 @@ Make sure you've run `clone_coin_core.sh` and `build_coin_core.sh` before runnin
 Some coin cores may have additional dependencies. Check the coin core's documentation.
 
 ### Linking errors
-Ensure the coin core built successfully. Check `coin_core/` for build artifacts.
+Ensure the coin core built successfully. Check `coin_core/` and `build/` for build artifacts. In case of trouble it is always a good idea to build from scratch:
+
+```bash
+rm -rf coin_core
+make clean
+```
 
 ## Supported Coins
 

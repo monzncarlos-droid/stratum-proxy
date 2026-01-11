@@ -676,22 +676,33 @@ static void handle_miner_line_phase2(BtcStratumSession& sess, Logger& log,
     // Version (little-endian)
     le32enc(hdr.data() + 0, sess.last_job.version);
 
-    // Previous block hash - pool sends hex in chunks already, but each 4-byte
-    // word needs to be byte-swapped for CBlockHeader's uint256 format.
-    // This matches what tnn-miner does with swap_prev_hash=true for scrypt-like coins.
+    // Previous block hash - byte ordering depends on algorithm
+#if COIN_SWAP_PREVHASH
+    // Scrypt-like: Read each 4-byte word from pool data and write in big-endian
+    // This effectively byte-swaps each word for CBlockHeader's uint256 format
     for (int i = 0; i < 8; i++) {
-      // Read 4 bytes from prevhash
       uint32_t word;
       std::memcpy(&word, sess.last_job.prev_hash.data() + i * 4, 4);
-      // Swap bytes within the word
-      word = ((word >> 24) & 0xFF) | ((word >> 8) & 0xFF00) |
-             ((word << 8) & 0xFF0000) | ((word << 24) & 0xFF000000);
-      // Write as little-endian
-      le32enc(hdr.data() + 4 + i * 4, word);
+      be32enc(hdr.data() + 4 + i * 4, word);
     }
+#else
+    // YesPower-like: Use prevhash bytes directly as received
+    std::memcpy(hdr.data() + 4, sess.last_job.prev_hash.data(), 32);
+#endif
 
-    // Merkle root - already in correct byte order from SHA256d
+    // Merkle root - byte ordering depends on algorithm
+#if COIN_SWAP_MERKLE
+    // YesPower-like: Read each 4-byte word and write in big-endian
+    // This effectively byte-swaps each word
+    for (int i = 0; i < 8; i++) {
+      uint32_t word;
+      std::memcpy(&word, merkle_root.data() + i * 4, 4);
+      be32enc(hdr.data() + 36 + i * 4, word);
+    }
+#else
+    // Scrypt-like: Use merkle root bytes directly from SHA256d
     std::memcpy(hdr.data() + 36, merkle_root.data(), 32);
+#endif
 
     // nTime
     uint32_t ntime_val = sess.last_job.ntime;

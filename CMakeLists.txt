@@ -118,8 +118,76 @@ if(EXISTS "${COIN_CORE_CONF}")
     endforeach()
 endif()
 
-# Pass hash function name to compiler
+# Read byte ordering settings from config
+set(COIN_SWAP_PREVHASH "true")  # Default for most altcoins (Scrypt-like)
+set(COIN_SWAP_MERKLE "false")   # Default for most altcoins (Scrypt-like)
+set(COIN_DIFF_MODE "bitcoin")   # Default difficulty calculation mode
+if(EXISTS "${COIN_CORE_CONF}")
+    foreach(LINE ${CONF_LINES})
+        if(LINE MATCHES "^COIN_CORE_SWAP_PREVHASH=(.*)$")
+            string(STRIP "${CMAKE_MATCH_1}" COIN_SWAP_PREVHASH)
+            message(STATUS "Using swap_prevhash: ${COIN_SWAP_PREVHASH}")
+        endif()
+        if(LINE MATCHES "^COIN_CORE_SWAP_MERKLE=(.*)$")
+            string(STRIP "${CMAKE_MATCH_1}" COIN_SWAP_MERKLE)
+            message(STATUS "Using swap_merkle: ${COIN_SWAP_MERKLE}")
+        endif()
+        if(LINE MATCHES "^COIN_CORE_DIFF_MODE=(.*)$")
+            string(STRIP "${CMAKE_MATCH_1}" COIN_DIFF_MODE)
+            message(STATUS "Using diff_mode: ${COIN_DIFF_MODE}")
+        endif()
+    endforeach()
+endif()
+
+# Convert boolean strings to 0/1 for C preprocessor
+if(COIN_SWAP_PREVHASH STREQUAL "true")
+    set(COIN_SWAP_PREVHASH_VALUE 1)
+else()
+    set(COIN_SWAP_PREVHASH_VALUE 0)
+endif()
+if(COIN_SWAP_MERKLE STREQUAL "true")
+    set(COIN_SWAP_MERKLE_VALUE 1)
+else()
+    set(COIN_SWAP_MERKLE_VALUE 0)
+endif()
+
+# Convert diff_mode string to numeric constant
+# 0 = bitcoin (0xffff0000 * 2^192), 1 = yespower (2^240)
+if(COIN_DIFF_MODE STREQUAL "yespower")
+    set(COIN_DIFF_MODE_VALUE 1)
+else()
+    set(COIN_DIFF_MODE_VALUE 0)
+endif()
+
+# Read COIN_CORE_POW_LIMIT and COIN_CORE_DIFF_MULTIPLIER from config
+set(COIN_CORE_POW_LIMIT "")
+set(COIN_CORE_DIFF_MULTIPLIER "1")
+if(EXISTS "${COIN_CORE_CONF}")
+    foreach(LINE ${CONF_LINES})
+        if(LINE MATCHES "^COIN_CORE_POW_LIMIT=(.*)$")
+            string(STRIP "${CMAKE_MATCH_1}" COIN_CORE_POW_LIMIT)
+            message(STATUS "Using powLimit: ${COIN_CORE_POW_LIMIT}")
+        endif()
+        if(LINE MATCHES "^COIN_CORE_DIFF_MULTIPLIER=(.*)$")
+            string(STRIP "${CMAKE_MATCH_1}" COIN_CORE_DIFF_MULTIPLIER)
+            message(STATUS "Using diff_multiplier: ${COIN_CORE_DIFF_MULTIPLIER}")
+        endif()
+    endforeach()
+endif()
+
+# Pass hash function name and byte ordering settings to compiler
 add_compile_definitions(COIN_HASH_FUNCTION=${COIN_HASH_FUNCTION})
+add_compile_definitions(COIN_SWAP_PREVHASH=${COIN_SWAP_PREVHASH_VALUE})
+add_compile_definitions(COIN_SWAP_MERKLE=${COIN_SWAP_MERKLE_VALUE})
+add_compile_definitions(COIN_DIFF_MODE=${COIN_DIFF_MODE_VALUE})
+
+# Pass diff_multiplier (from yiimp g_algos table)
+add_compile_definitions(COIN_DIFF_MULTIPLIER=${COIN_CORE_DIFF_MULTIPLIER})
+
+# Pass powLimit if specified (for reference, but stratum uses diff_multiplier)
+if(NOT COIN_CORE_POW_LIMIT STREQUAL "")
+    add_compile_definitions(COIN_CORE_POW_LIMIT="${COIN_CORE_POW_LIMIT}")
+endif()
 
 # -----------------------------------------------------------------------------
 # Coin core library paths (from config)
@@ -332,7 +400,7 @@ endforeach()
 
 # Platform-specific settings
 if(UNIX)
-    target_compile_options(stratum-proxy PRIVATE -Wall -Wextra)
+    target_compile_options(stratum-proxy PRIVATE -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-deprecated-declarations)
     target_link_libraries(stratum-proxy PRIVATE pthread)
 endif()
 

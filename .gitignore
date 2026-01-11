@@ -55,3 +55,6 @@ extern/
 
 # Exclude binaries
 stratum-proxy
+
+# Internal tests
+/test

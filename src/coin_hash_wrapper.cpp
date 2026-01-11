@@ -61,56 +61,132 @@ void computeBlockHash(const uint8_t header[80], uint8_t hash[32]) {
     std::memcpy(hash, result.begin(), 32);
 }
 
+// Forward declaration
+static uint64_t extractHashInt(const uint8_t hash[32]);
+
 bool checkHashMeetsTarget(const uint8_t hash[32], const uint32_t target[8]) {
-    // Compare hash against target (both little-endian 256-bit integers)
-    // hash <= target means the hash is valid
-    for (int i = 7; i >= 0; --i) {
-        uint32_t h = 0;
-        std::memcpy(&h, hash + i * 4, 4);
-        if (h < target[i]) return true;
-        if (h > target[i]) return false;
-    }
-    return true; // Equal
+    // Simple approach: compare share difficulty against pool difficulty
+    // The target array stores the pool difficulty as a double in target[0-1]
+    
+    double pool_difficulty;
+    std::memcpy(&pool_difficulty, target, sizeof(double));
+    
+    double share_difficulty = shareDifficultyFromHash(hash);
+    
+    return share_difficulty >= pool_difficulty;
 }
 
+// Helper: Parse powLimit hex string to cpp_int
+// Handles both "0x3fff..." and "0000ffff..." formats
+static boost::multiprecision::cpp_int parsePowLimitHex(const char* hexStr) {
+    using boost::multiprecision::cpp_int;
+    std::string s(hexStr);
+    
+    // Remove 0x prefix if present
+    if (s.size() >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        s = s.substr(2);
+    }
+    
+    // Parse hex string to cpp_int
+    cpp_int value = 0;
+    for (char c : s) {
+        value <<= 4;
+        if (c >= '0' && c <= '9') {
+            value |= (c - '0');
+        } else if (c >= 'a' && c <= 'f') {
+            value |= (c - 'a' + 10);
+        } else if (c >= 'A' && c <= 'F') {
+            value |= (c - 'A' + 10);
+        }
+    }
+    return value;
+}
+
+// =============================================================================
+// Yiimp-compatible stratum difficulty calculation
+// =============================================================================
+//
+// YIIMP APPROACH (from util.cpp and client_submit.cpp):
+//
+// 1. get_hash_difficulty() extracts bytes [22-29] of the 32-byte hash as uint64_t
+//    This is the "hash_int" - the middle 8 bytes of the hash (big-endian extraction)
+//
+// 2. share_diff = 0x0000ffff00000000 / hash_int
+//    This is a CONSTANT diff1, not algorithm-dependent!
+//
+// 3. The diff_multiplier from g_algos is ONLY used for target comparison:
+//    user_target = share_to_target(difficulty) * diff_multiplier
+//    hash_int_scaled = hash_int / 0x10000
+//    Accept if: hash_int_scaled <= user_target
+//
+// So for share difficulty display: always use 0x0000ffff00000000 / hash_int
+// For target comparison: apply diff_multiplier to the target, not the diff1
+//
+// =============================================================================
+
+// Extract hash difficulty like yiimp's get_hash_difficulty()
+// Returns bytes [22-29] of the hash as a big-endian uint64_t
+static uint64_t extractHashInt(const uint8_t hash[32]) {
+    // Hash is in little-endian format (Bitcoin convention)
+    // yiimp reads bytes p[22] through p[29] in big-endian order
+    const uint8_t* p = hash;
+    uint64_t v =
+        (uint64_t)p[29] << 56 |
+        (uint64_t)p[28] << 48 |
+        (uint64_t)p[27] << 40 |
+        (uint64_t)p[26] << 32 |
+        (uint64_t)p[25] << 24 |
+        (uint64_t)p[24] << 16 |
+        (uint64_t)p[23] << 8  |
+        (uint64_t)p[22] << 0;
+    return v;
+}
+
+// Yiimp diff1 constant for share difficulty calculation
+// This is ALWAYS 0x0000ffff00000000, independent of algorithm
+static constexpr uint64_t YIIMP_DIFF1 = 0x0000ffff00000000ULL;
+
+// COIN_DIFF_MULTIPLIER from coin_core_repo.conf (defaults to 1)
+// This is used for target comparison, not share difficulty calculation
+#ifndef COIN_DIFF_MULTIPLIER
+#define COIN_DIFF_MULTIPLIER 1
+#endif
+
 void difficultyToTarget(double difficulty, uint32_t target[8]) {
+    // We don't actually need a proper target for our purposes.
+    // The checkHashMeetsTarget function will directly compare share_diff >= pool_diff.
+    // This function is kept for API compatibility but we store the difficulty directly.
+    
+    // Store the difficulty as a double in the target array for later retrieval
+    // We use target[0-1] to store the double (8 bytes)
     std::memset(target, 0, 32);
-    if (difficulty == 0.0) {
-        std::memset(target, 0xff, 32);
-        return;
-    }
-
-    int k;
-    double diff = difficulty;
-    for (k = 6; k > 0 && diff > 1.0; k--) {
-        diff /= 4294967296.0;
-    }
-
-    uint64_t m = static_cast<uint64_t>(4294901760.0 / diff);
-    if (m == 0 && k == 6) {
-        std::memset(target, 0xff, 32);
-    } else {
-        target[k] = static_cast<uint32_t>(m);
-        target[k + 1] = static_cast<uint32_t>(m >> 32);
-    }
+    std::memcpy(target, &difficulty, sizeof(double));
 }
 
 double shareDifficultyFromHash(const uint8_t hash[32]) {
-    using boost::multiprecision::cpp_dec_float_50;
-    using boost::multiprecision::cpp_int;
-
-    // diff1 target: 0xffff0000 at word index 6 (little-endian word order)
-    // This matches the standard Bitcoin/Litecoin stratum difficulty convention
-    cpp_int diff1 = cpp_int(0xffff0000);
-    diff1 <<= (32 * 6);
-
-    cpp_int h = u256FromLeBytes(hash);
-    if (h == 0) {
+    // Yiimp share_diff calculation from util.cpp target_to_diff():
+    //   share_diff = 0x0000ffff00000000 / hash_int
+    //
+    // where hash_int is extracted from bytes [22-29] of the hash
+    //
+    // IMPORTANT: This gives the "base" difficulty. For algorithms with
+    // diff_multiplier (like YesPower with 0x10000), the EFFECTIVE difficulty
+    // that the pool compares against is:
+    //   effective_diff = share_diff * diff_multiplier
+    //
+    // This is because yiimp's target comparison uses:
+    //   user_target = share_to_target(difficulty) * diff_multiplier
+    // And the share_diff is calculated without the multiplier.
+    
+    uint64_t hash_int = extractHashInt(hash);
+    if (hash_int == 0) {
         return std::numeric_limits<double>::infinity();
     }
 
-    cpp_dec_float_50 d = cpp_dec_float_50(diff1) / cpp_dec_float_50(h);
-    return d.convert_to<double>();
+    double base_diff = (double)YIIMP_DIFF1 / (double)hash_int;
+    
+    // Apply diff_multiplier to get the effective pool-comparable difficulty
+    return base_diff * (double)COIN_DIFF_MULTIPLIER;
 }
 
 } // namespace CoinHash

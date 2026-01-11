@@ -50,8 +50,9 @@ extern/
 # Exclude test output
 /test-output/
 
-# Exclude the stratum.toml configuration file
+# Exclude the configuration files (there are sample files in the repo that can be used to create these)
 /stratum.toml
+/coin_core_repo.conf
 
 # Exclude binaries
 stratum-proxy

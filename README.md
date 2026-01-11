@@ -81,4 +81,12 @@ There are none and there will be none. The project is aimed at developers who sh
 
 ## Help with the development
 
-This project 
+Help this project by forking it, adding more coins, testing it, enhancing it, correcting it and creating pull requests.
+
+You can use AI tools for that. I've created README_AI.md for that - a human readable file that can be also used for an AI model to understand the project structure and its coding principles.
+
+Majority of the code was created using the GitHub Copilot with Claude Opus 4.5 model.
+
+## Donations
+
+I don't want any donations for myself. If you find this project helpful and want to express your gratitude, look at the [Rincoin project](https://www.rincoin.net), create a wallet, buy or mine some Rincoins and spread a word about it.

@@ -12,14 +12,14 @@ color_console = true
 [[decorators]]
 name = "share submission"
 pattern = '(mining\.submit)'
-modifier = "^[[1;93m$1^[[0m"
+modifier = "\u001b[1;93m$1\u001b[0m"
 
 [[decorators]]
 name = "accepted share"
 pattern = '"result"\s*:\s*true'
-modifier = "^[[1;92m$0^[[0m"
+modifier = "\u001b[1;92m$0\u001b[0m"
 
 [[decorators]]
 name = "rejected share"
 pattern = '"result"\s*:\s*false'
-modifier = "^[[1;91m$0^[[0m"
+modifier = "\u001b[1;91m$0\u001b[0m"
